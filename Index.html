@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowDesk - Deal Pipeline Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #000000;
+            --secondary-dark: #0a0a0a;
+            --tertiary-dark: #141414;
+            --accent-blue: #ffff00;
+            --accent-green: #ffffff;
+            --accent-orange: #ffff00;
+            --accent-red: #ff3333;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #333333;
+            --hover-bg: #1a1a1a;
+        }
+
+        body {
+            background-color: var(--primary-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: var(--secondary-dark);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffff00;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .sidebar-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .sidebar-btn:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        /* Active/selected sidebar button: use neon-yellow border and neon-yellow text instead of full background fill */
+        .sidebar-btn.active {
+            background-color: transparent;
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .filter-input, .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .filter-input::placeholder, .filter-select {
+            color: var(--text-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--primary-dark);
+            margin-bottom: 50px;
+        }
+
+        .header {
+            background-color: var(--secondary-dark);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #e6e600; /* slightly darker neon yellow on hover */
+            transform: translateY(-2px);
+        }
+
+        /* New Deal button text should be black for legibility on neon yellow */
+        #newDealBtn {
+            color: #000000;
+        }
+        #newDealBtn:hover {
+            color: #000000;
+        }
+        /* Get Started button text set to black */
+        #getStartedBtn {
+            color: #000000;
+        }
+        #getStartedBtn:hover { color: #000000; }
+
+        /* Make refresh button text fully visible and box match content */
+        #refreshBtn { padding: 8px 14px; font-weight: 700; }
+        #refreshBtn:hover { transform: translateY(-1px); }
+
+        .btn-secondary {
+            background-color: var(--tertiary-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Kanban Board */
+        .kanban-board {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            padding: 20px 30px;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .kanban-column {
+            min-width: 350px;
+            background-color: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .column-header {
+            background-color: var(--secondary-dark);
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .column-count {
+            background-color: var(--accent-blue);
+            color: #000000;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .kanban-cards {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .deal-card {
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .deal-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .deal-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .deal-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .deal-company {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .deal-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .deal-size {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .deal-sector {
+            color: var(--text-secondary);
+        }
+
+        .deal-priority {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .priority-critical {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .priority-high {
+            background-color: rgba(249, 115, 22, 0.2);
+            color: #fdba74;
+        }
+
+        .priority-medium {
+            background-color: rgba(37, 99, 235, 0.2);
+            color: #93c5fd;
+        }
+
+        .priority-low {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #86efac;
+        }
+
+        .deal-owner {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .deal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .deal-action-btn {
+            flex: 1;
+            padding: 6px;
+            background-color: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .deal-action-btn:hover {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .modal-content {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-danger {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        /* Onboarding */
+        .onboarding-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .onboarding-overlay.active {
+            display: flex;
+        }
+
+        .onboarding-content {
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .onboarding-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .onboarding-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .onboarding-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* Activity Log */
+        .activity-log {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-timestamp {
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            .sidebar, .header, .modal-close, .deal-actions {
+                display: none !important;
+            }
+            .kanban-board {
+                padding: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1440px) {
+            .kanban-column {
+                min-width: 320px;
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .sidebar {
+                width: 240px;
+            }
+            .kanban-board {
+                gap: 15px;
+                padding: 15px 20px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* List view table */
+        .list-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--text-primary);
+        }
+        .list-table th, .list-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            font-size: 13px;
+        }
+        .list-table th {
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .list-table tr:hover td {
+            background-color: var(--hover-bg);
+        }
+
+        /* Analytics styles */
+        .analytics-container {
+            padding: 20px 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .analytics-card-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .analytics-card {
+            background-color: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .chart-container {
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .chart-title { font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+
+        .chart-svg { width: 100%; height: 220px; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-green);
+            border-radius: 6px;
+            padding: 16px 20px;
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .copyright-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--secondary-dark);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-overlay" id="onboardingOverlay">
+        <div class="onboarding-content">
+            <h1 class="onboarding-title">Welcome to FlowDesk</h1>
+            <p class="onboarding-subtitle">Command your deal pipeline like a cockpit. All data stays local and secure.</p>
+            <div class="onboarding-actions">
+                <button class="btn btn-secondary" onclick="skipOnboarding()">Skip</button>
+                <button id="getStartedBtn" class="btn btn-primary" onclick="startOnboarding()">Get Started</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">FlowDesk</div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Views</div>
+                <button class="sidebar-btn active" data-view="board" onclick="switchView('board')">Pipeline Board</button>
+                <button class="sidebar-btn" data-view="list" onclick="switchView('list')">List View</button>
+                <button class="sidebar-btn" data-view="analytics" onclick="switchView('analytics')">Analytics</button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Filters</div>
+                <div class="filter-group">
+                    <label class="filter-label">Search Deals</label>
+                    <input type="text" id="searchInput" class="filter-input" placeholder="Deal name, company..." 
+                           onkeyup="applyFilters()">
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Priority</label>
+                    <select id="priorityFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Priorities</option>
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Deal Type</label>
+                    <select id="typeFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Types</option>
+                        <option value="M&A">M&A</option>
+                        <option value="PE">PE</option>
+                        <option value="VC">VC</option>
+                        <option value="Strategic">Strategic</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Stage</label>
+                    <select id="stageFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Stages</option>
+                        <option value="Lead">Lead</option>
+                        <option value="Screening">Screening</option>
+                        <option value="Due Diligence">Due Diligence</option>
+                        <option value="IC">IC</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Actions</div>
+                <button class="sidebar-btn" onclick="exportAllDeals()">Export CSV</button>
+                <button class="sidebar-btn" onclick="resetDemo()">Reset Demo</button>
+                <button class="sidebar-btn" onclick="toggleSettings()">Settings</button>
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div style="padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 11px;">
+                <p style="margin-bottom: 8px;">[LOCAL] Mode Active</p>
+                <p>All data stored in your browser. No server connection.</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-title">Pipeline Overview</div>
+                <div class="header-actions">
+                    <button id="refreshBtn" class="btn btn-secondary" onclick="refreshData()" title="Refresh">REFRESH</button>
+                    <button id="newDealBtn" class="btn btn-primary" onclick="openNewDealModal()">+ NEW DEAL</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div style="padding: 15px 30px; border-bottom: 1px solid var(--border-color); background-color: var(--secondary-dark);">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalDeals">0</div>
+                        <div class="stat-label">Total Deals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pipelineValue">$0M</div>
+                        <div class="stat-label">Pipeline Value</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="criticalCount">0</div>
+                        <div class="stat-label">Critical Priority</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="closedCount">0</div>
+                        <div class="stat-label">Closed Deals</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Board View -->
+            <div id="boardView" class="kanban-board"></div>
+            <!-- List View (hidden by default) -->
+            <div id="listView" class="list-view" style="display:none; padding:20px 30px; overflow:auto;">
+                <!-- Table will be rendered here -->
+            </div>
+
+            <!-- Analytics View (hidden by default) -->
+            <div id="analyticsView" class="analytics-view" style="display:none;">
+                <div class="analytics-container">
+                    <div>
+                        <div class="analytics-card-row">
+                            <div class="analytics-card">
+                                <div style="font-size:12px;color:var(--text-secondary)">Total Deals</div>
+                                <div id="analyticsTotalDeals" style="font-size:20px;font-weight:700;color:var(--accent-blue)">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div style="font-size:12px;color:var(--text-secondary)">Pipeline Value</div>
+                                <div id="analyticsPipelineValue" style="font-size:20px;font-weight:700;color:var(--accent-blue)">$0M</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Deals by Stage</div>
+                            <div id="stageChart" class="chart-svg"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="chart-container">
+                            <div class="chart-title">Deals by Priority</div>
+                            <div id="priorityChart" class="chart-svg"></div>
+                        </div>
+
+                        <div class="chart-container" style="margin-top:16px;">
+                            <div class="chart-title">Top Sectors</div>
+                            <div id="sectorList" style="color:var(--text-secondary); font-size:13px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deal Detail Modal -->
+    <div class="modal-overlay" id="dealModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Deal Details</h2>
+                <button class="modal-close" onclick="closeDealModal()">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label class="form-label">Deal Name</label>
+                    <input type="text" id="dealName" class="form-input" placeholder="e.g., TechCorp Acquisition">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Target Company</label>
+                        <input type="text" id="targetCompany" class="form-input" placeholder="Target name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Deal Type</label>
+                        <select id="dealType" class="form-select">
+                            <option value="M&A">M&A</option>
+                            <option value="PE">PE</option>
+                            <option value="VC">VC</option>
+                            <option value="Strategic">Strategic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Sector</label>
+                        <select id="sector" class="form-select">
+                            <option value="">Select Sector</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Energy">Energy</option>
+                            <option value="Consumer">Consumer</option>
+                            <option value="Industrial">Industrial</option>
+                            <option value="Real Estate">Real Estate</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Geography</label>
+                        <input type="text" id="geography" class="form-input" placeholder="e.g., North America">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Deal Size (millions)</label>
+                        <input type="number" id="dealSize" class="form-input" placeholder="0" min="0" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Valuation Range</label>
+                        <input type="text" id="valuationRange" class="form-input" placeholder="e.g., $100M - $150M">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Current Stage</label>
+                        <select id="stage" class="form-select">
+                            <option value="Lead">Lead</option>
+                            <option value="Screening">Screening</option>
+                            <option value="Due Diligence">Due Diligence</option>
+                            <option value="IC">IC</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select id="priority" class="form-select">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Deal Owner</label>
+                    <input type="text" id="owner" class="form-input" placeholder="Name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Internal Notes</label>
+                    <textarea id="notes" class="form-textarea" placeholder="Add notes about this deal..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Key Risks</label>
+                    <textarea id="risks" class="form-textarea" placeholder="Document any risk factors..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Key Catalysts</label>
+                    <textarea id="catalysts" class="form-textarea" placeholder="Define key catalysts..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Next Action</label>
+                    <input type="text" id="nextAction" class="form-input" placeholder="What's next?">
+                </div>
+
+                <div style="background-color: var(--tertiary-dark); padding: 12px; border-radius: 6px; font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
+                    <div id="activityLog" class="activity-log">
+                        <div class="activity-item">Deal created</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDealModal()">Cancel</button>
+                <button class="btn btn-danger" id="deleteDealBtn" onclick="deleteDeal()" style="display: none;">Delete Deal</button>
+                <button class="btn btn-primary" onclick="saveDeal()">Save Deal</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="copyright-footer">
+        Copyright (c) 2025 FlowDesk. All Rights Reserved. | Local Mode - Confidential
+    </div>
+
+    <script>
+        // ========================
+        // Data Management
+        // ========================
+
+        const STORAGE_KEY = 'flowdesk_deals';
+        const ONBOARDING_KEY = 'flowdesk_onboarded';
+
+        // One-time flag: when true, clear any previously saved demo data from localStorage
+        // Set to false after first load if you want to preserve user data.
+        const CLEAN_DEMO = true;
+        let deals = [];
+        let currentDealId = null;
+        let filteredDeals = [];
+        let currentView = 'board';
+
+        const stages = ['Lead', 'Screening', 'Due Diligence', 'IC', 'Closed'];
+
+        function loadDeals() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            deals = stored ? JSON.parse(stored) : [];
+            filteredDeals = [...deals];
+            updateStats();
+        }
+
+        function saveDeals() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
+            updateStats();
+        }
+
+        function createDeal(overrides = {}) {
+            return {
+                id: Date.now().toString(),
+                name: overrides.name || 'New Deal',
+                targetCompany: overrides.targetCompany || '',
+                type: overrides.type || 'M&A',
+                sector: overrides.sector || 'Technology',
+                geography: overrides.geography || 'North America',
+                dealSize: overrides.dealSize || 0,
+                valuationRange: overrides.valuationRange || '',
+                stage: overrides.stage || 'Lead',
+                priority: overrides.priority || 'Medium',
+                owner: overrides.owner || 'Unassigned',
+                notes: overrides.notes || '',
+                risks: overrides.risks || '',
+                catalysts: overrides.catalysts || '',
+                nextAction: overrides.nextAction || '',
+                created: new Date().toISOString(),
+                updated: new Date().toISOString(),
+                activity: ['Deal created']
+            };
+        }
+
+        // ========================
+        // UI Rendering
+        // ========================
+
+        function renderBoard() {
+            const boardView = document.getElementById('boardView');
+            boardView.innerHTML = '';
+
+            stages.forEach(stage => {
+                const stageDeals = filteredDeals.filter(d => d.stage === stage);
+                
+                const column = document.createElement('div');
+                column.className = 'kanban-column';
+                column.draggable = false;
+
+                column.innerHTML = `
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span>${getStageIcon(stage)} ${stage}</span>
+                            <span class="column-count">${stageDeals.length}</span>
+                        </div>
+                    </div>
+                    <div class="kanban-cards" id="column-${stage}">
+                        ${stageDeals.length === 0 ? 
+                            '<div class="empty-state"><div class="empty-state-text">No deals</div></div>' : 
+                            stageDeals.map(deal => renderDealCard(deal)).join('')
+                        }
+                    </div>
+                `;
+
+                boardView.appendChild(column);
+
+                // Setup drop zone
+                const dropZone = column.querySelector(`#column-${stage}`);
+                dropZone.addEventListener('dragover', handleDragOver);
+                dropZone.addEventListener('drop', (e) => handleDrop(e, stage));
+            });
+        }
+
+        function renderDealCard(deal) {
+            return `
+                <div class="deal-card" draggable="true" ondragstart="handleDragStart(event, '${deal.id}')" 
+                     ondragend="handleDragEnd(event)">
+                    <div class="deal-priority priority-${deal.priority.toLowerCase()}">${deal.priority}</div>
+                    <div class="deal-title">${deal.name}</div>
+                    <div class="deal-company">${deal.targetCompany || 'N/A'}</div>
+                    <div class="deal-meta">
+                        <span class="deal-size">$${deal.dealSize}M</span>
+                        <span class="deal-sector">${deal.sector}</span>
+                    </div>
+                    <div class="deal-owner">Owner: ${deal.owner}</div>
+                    <div class="deal-actions">
+                        <button class="deal-action-btn" onclick="openDealModal('${deal.id}')">View</button>
+                        <button class="deal-action-btn" onclick="exportDealPDF('${deal.id}')">PDF</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStageIcon(stage) {
+            const icons = {
+                'Lead': '[LEAD]',
+                'Screening': '[SCREEN]',
+                'Due Diligence': '[DD]',
+                'IC': '[IC]',
+                'Closed': '[DONE]'
+            };
+            return icons[stage] || '[STAGE]';
+        }
+
+        // ========================
+        // Drag & Drop
+        // ========================
+
+        let draggedDealId = null;
+
+        function handleDragStart(event, dealId) {
+            draggedDealId = dealId;
+            event.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(event, stage) {
+            event.preventDefault();
+            if (!draggedDealId) return;
+
+            const deal = deals.find(d => d.id === draggedDealId);
+            if (deal && deal.stage !== stage) {
+                deal.stage = stage;
+                deal.updated = new Date().toISOString();
+                deal.activity.push(`Moved to ${stage}`);
+                saveDeals();
+                renderBoard();
+            }
+            draggedDealId = null;
+        }
+
+        // ========================
+        // Modal Management
+        // ========================
+
+        function openNewDealModal() {
+            currentDealId = null;
+            document.getElementById('dealName').value = '';
+            document.getElementById('targetCompany').value = '';
+            document.getElementById('dealType').value = 'M&A';
+            document.getElementById('sector').value = 'Technology';
+            document.getElementById('geography').value = 'North America';
+            document.getElementById('dealSize').value = '';
+            document.getElementById('valuationRange').value = '';
+            document.getElementById('stage').value = 'Lead';
+            document.getElementById('priority').value = 'Medium';
+            document.getElementById('owner').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('risks').value = '';
+            document.getElementById('catalysts').value = '';
+            document.getElementById('nextAction').value = '';
+            document.getElementById('deleteDealBtn').style.display = 'none';
+            document.getElementById('activityLog').innerHTML = '<div class="activity-item">New deal</div>';
+            document.getElementById('dealModal').classList.add('active');
+        }
+
+        function openDealModal(dealId) {
+            currentDealId = dealId;
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+
+            document.getElementById('dealName').value = deal.name;
+            document.getElementById('targetCompany').value = deal.targetCompany;
+            document.getElementById('dealType').value = deal.type;
+            document.getElementById('sector').value = deal.sector;
+            document.getElementById('geography').value = deal.geography;
+            document.getElementById('dealSize').value = deal.dealSize;
+            document.getElementById('valuationRange').value = deal.valuationRange;
+            document.getElementById('stage').value = deal.stage;
+            document.getElementById('priority').value = deal.priority;
+            document.getElementById('owner').value = deal.owner;
+            document.getElementById('notes').value = deal.notes;
+            document.getElementById('risks').value = deal.risks;
+            document.getElementById('catalysts').value = deal.catalysts;
+            document.getElementById('nextAction').value = deal.nextAction;
+            document.getElementById('deleteDealBtn').style.display = 'block';
+            
+            const activityLog = document.getElementById('activityLog');
+            activityLog.innerHTML = deal.activity.map((item, idx) => 
+                `<div class="activity-item">${item} <span class="activity-timestamp">${new Date(deal.created).toLocaleDateString()}</span></div>`
+            ).join('');
+
+            document.getElementById('dealModal').classList.add('active');
+        }
+
+        function closeDealModal() {
+            document.getElementById('dealModal').classList.remove('active');
+            currentDealId = null;
+        }
+
+        function saveDeal() {
+            if (currentDealId) {
+                // Update existing
+                const deal = deals.find(d => d.id === currentDealId);
+                if (deal) {
+                    deal.name = document.getElementById('dealName').value;
+                    deal.targetCompany = document.getElementById('targetCompany').value;
+                    deal.type = document.getElementById('dealType').value;
+                    deal.sector = document.getElementById('sector').value;
+                    deal.geography = document.getElementById('geography').value;
+                    deal.dealSize = parseFloat(document.getElementById('dealSize').value) || 0;
+                    deal.valuationRange = document.getElementById('valuationRange').value;
+                    deal.stage = document.getElementById('stage').value;
+                    deal.priority = document.getElementById('priority').value;
+                    deal.owner = document.getElementById('owner').value;
+                    deal.notes = document.getElementById('notes').value;
+                    deal.risks = document.getElementById('risks').value;
+                    deal.catalysts = document.getElementById('catalysts').value;
+                    deal.nextAction = document.getElementById('nextAction').value;
+                    deal.updated = new Date().toISOString();
+                    deal.activity.push(`Updated: ${deal.name}`);
+                }
+            } else {
+                // Create new
+                const newDeal = createDeal({
+                    name: document.getElementById('dealName').value,
+                    targetCompany: document.getElementById('targetCompany').value,
+                    type: document.getElementById('dealType').value,
+                    sector: document.getElementById('sector').value,
+                    geography: document.getElementById('geography').value,
+                    dealSize: parseFloat(document.getElementById('dealSize').value) || 0,
+                    valuationRange: document.getElementById('valuationRange').value,
+                    stage: document.getElementById('stage').value,
+                    priority: document.getElementById('priority').value,
+                    owner: document.getElementById('owner').value,
+                    notes: document.getElementById('notes').value,
+                    risks: document.getElementById('risks').value,
+                    catalysts: document.getElementById('catalysts').value,
+                    nextAction: document.getElementById('nextAction').value
+                });
+                deals.push(newDeal);
+            }
+
+            saveDeals();
+            closeDealModal();
+            applyFilters();
+            renderBoard();
+            showToast('Deal saved successfully');
+        }
+
+        function deleteDeal() {
+            if (!currentDealId) return;
+            if (!confirm('Are you sure you want to delete this deal?')) return;
+
+            deals = deals.filter(d => d.id !== currentDealId);
+            saveDeals();
+            closeDealModal();
+            applyFilters();
+            renderBoard();
+            showToast('Deal deleted');
+        }
+
+        // ========================
+        // Filtering & Search
+        // ========================
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const stageFilter = document.getElementById('stageFilter').value;
+
+            filteredDeals = deals.filter(deal => {
+                const matchesSearch = !searchQuery || 
+                    deal.name.toLowerCase().includes(searchQuery) ||
+                    deal.targetCompany.toLowerCase().includes(searchQuery) ||
+                    deal.sector.toLowerCase().includes(searchQuery);
+
+                const matchesPriority = !priorityFilter || deal.priority === priorityFilter;
+                const matchesType = !typeFilter || deal.type === typeFilter;
+                const matchesStage = !stageFilter || deal.stage === stageFilter;
+
+                return matchesSearch && matchesPriority && matchesType && matchesStage;
+            });
+
+            renderBoard();
+        }
+
+        // ========================
+        // Stats & Updates
+        // ========================
+
+        function updateStats() {
+            const totalDeals = deals.length;
+            const pipelineValue = deals.reduce((sum, d) => sum + d.dealSize, 0);
+            const criticalCount = deals.filter(d => d.priority === 'Critical').length;
+            const closedCount = deals.filter(d => d.stage === 'Closed').length;
+
+            document.getElementById('totalDeals').textContent = totalDeals;
+            document.getElementById('pipelineValue').textContent = `$${pipelineValue.toFixed(0)}M`;
+            document.getElementById('criticalCount').textContent = criticalCount;
+            document.getElementById('closedCount').textContent = closedCount;
+        }
+
+        // ========================
+        // List View Rendering
+        // ========================
+        function renderListView() {
+            const listEl = document.getElementById('listView');
+            if (!listEl) return;
+
+            if (!filteredDeals || filteredDeals.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-state-text">No deals</div></div>';
+                return;
+            }
+
+            let rows = filteredDeals.map(d => {
+                return `
+                    <tr>
+                        <td>${escapeHtml(d.name)}</td>
+                        <td>${escapeHtml(d.targetCompany)}</td>
+                        <td>${escapeHtml(d.type)}</td>
+                        <td>${escapeHtml(d.sector)}</td>
+                        <td>$${d.dealSize}M</td>
+                        <td>${escapeHtml(d.stage)}</td>
+                        <td>${escapeHtml(d.priority)}</td>
+                        <td>${escapeHtml(d.owner)}</td>
+                        <td>${new Date(d.updated).toLocaleDateString()}</td>
+                        <td>
+                            <button class="deal-action-btn" onclick="openDealModal('${d.id}')">View</button>
+                            <button class="deal-action-btn" onclick="exportDealPDF('${d.id}')">PDF</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            listEl.innerHTML = `
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Deal Name</th>
+                            <th>Company</th>
+                            <th>Type</th>
+                            <th>Sector</th>
+                            <th>Size</th>
+                            <th>Stage</th>
+                            <th>Priority</th>
+                            <th>Owner</th>
+                            <th>Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // ========================
+        // Analytics Rendering
+        // ========================
+        function renderAnalytics() {
+            const analyticsEl = document.getElementById('analyticsView');
+            if (!analyticsEl) return;
+
+            // Prefer filteredDeals (current filters), fallback to full deals list
+            const data = (filteredDeals && filteredDeals.length) ? filteredDeals : (deals && deals.length ? deals : []);
+
+            // Totals (show zeros when no data)
+            const totalDeals = data.length;
+            const pipelineValue = data.reduce((s, d) => s + (parseFloat(d.dealSize) || 0), 0);
+            document.getElementById('analyticsTotalDeals').textContent = totalDeals;
+            document.getElementById('analyticsPipelineValue').textContent = `$${pipelineValue.toFixed(0)}M`;
+
+            // Counts by stage
+            const stageCounts = {};
+            stages.forEach(s => stageCounts[s] = 0);
+            data.forEach(d => { stageCounts[d.stage] = (stageCounts[d.stage] || 0) + 1; });
+
+            // Priority breakdown
+            const priorities = ['Critical','High','Medium','Low'];
+            const priorityCounts = {};
+            priorities.forEach(p => priorityCounts[p] = 0);
+            data.forEach(d => { priorityCounts[d.priority] = (priorityCounts[d.priority] || 0) + 1; });
+
+            // Top sectors (sorted)
+            const sectorCounts = {};
+            data.forEach(d => { const s = d.sector || 'Other'; sectorCounts[s] = (sectorCounts[s] || 0) + 1; });
+            const topSectors = Object.entries(sectorCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+
+            // Draw simple bar chart for stages (will render zero-height bars if counts are zero)
+            drawStageBarChart(stageCounts, 'stageChart');
+
+            // Draw pie for priorities (renders placeholder if no priority data)
+            drawPriorityPie(priorityCounts, 'priorityChart');
+
+            // Render sector list
+            const sectorListEl = document.getElementById('sectorList');
+            sectorListEl.innerHTML = topSectors.map(([s,c]) => `<div style="padding:6px 0;border-bottom:1px solid var(--border-color);color:var(--text-primary)"><strong style='color:var(--accent-blue)'>${c}</strong> — ${escapeHtml(s)}</div>`).join('');
+        }
+
+        function drawStageBarChart(counts, targetId) {
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            const entries = Object.entries(counts);
+            const max = Math.max(...entries.map(e=>e[1]),1);
+            const width = 600, height = 220, padding = 30;
+
+            let bars = '';
+            const barWidth = (width - padding*2) / entries.length - 12;
+            entries.forEach(( [label, value], i) => {
+                const x = padding + i * (barWidth + 12);
+                const h = (value / max) * (height - padding*2);
+                const y = height - padding - h;
+                bars += `<g>
+                    <rect x="${x}" y="${y}" width="${barWidth}" height="${h}" fill="var(--accent-blue)" />
+                    <text x="${x + barWidth/2}" y="${height - padding + 16}" text-anchor="middle" fill="var(--text-secondary)" font-size="11">${label}</text>
+                    <text x="${x + barWidth/2}" y="${y - 6}" text-anchor="middle" fill="var(--text-primary)" font-size="12">${value}</text>
+                </g>`;
+            });
+
+            el.innerHTML = `<svg class="chart-svg" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="0" width="100%" height="100%" fill="transparent"></rect>
+                ${bars}
+            </svg>`;
+        }
+
+        function drawPriorityPie(counts, targetId) {
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            const entries = Object.entries(counts).filter(e=>e[1]>0);
+            const total = entries.reduce((s,e)=>s+e[1],0) || 0;
+            const width = 300, height = 220, cx = 110, cy = 110, r = 80;
+            let angle = -Math.PI/2;
+            const colors = { 'Critical': '#ff6b6b', 'High': '#fdba74', 'Medium': '#93c5fd', 'Low': '#86efac' };
+            let slices = '';
+            if (entries.length === 0) {
+                // Render placeholder
+                el.innerHTML = `<div style="padding:18px;color:var(--text-secondary);font-size:13px">No priority data</div>`;
+                return;
+            }
+
+            entries.forEach(([label, value], idx) => {
+                const slice = value / total;
+                const next = angle + slice * Math.PI*2;
+                const x1 = cx + r * Math.cos(angle);
+                const y1 = cy + r * Math.sin(angle);
+                const x2 = cx + r * Math.cos(next);
+                const y2 = cy + r * Math.sin(next);
+                const large = slice > 0.5 ? 1 : 0;
+                slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${colors[label] || 'var(--accent-blue)'}"></path>`;
+                // label line
+                const mid = angle + (next - angle)/2;
+                const lx = cx + (r + 30) * Math.cos(mid);
+                const ly = cy + (r + 30) * Math.sin(mid);
+                const percent = Math.round((slice*100));
+                slices += `<text x="${lx}" y="${ly}" fill="var(--text-secondary)" font-size="12" text-anchor="middle">${label} (${percent}%)</text>`;
+                angle = next;
+            });
+
+            el.innerHTML = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${slices}</svg>`;
+        }
+
+        // Simple escaping to avoid HTML injection in table cells
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/[&<>"'`]/g, function (s) {
+                return ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                    '`': '&#96;'
+                })[s];
+            });
+        }
+
+        // ========================
+        // Export Functions
+        // ========================
+
+        function exportDealPDF(dealId) {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${deal.name} - Deal Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+        h1 { color: #1e40af; border-bottom: 3px solid #1e40af; padding-bottom: 10px; }
+        .section { margin: 20px 0; }
+        .section-title { font-weight: bold; color: #1e40af; font-size: 14px; margin-top: 15px; margin-bottom: 8px; }
+        .field { margin: 8px 0; }
+        .field-label { font-weight: bold; display: inline-block; width: 150px; }
+        .field-value { display: inline-block; }
+        .priority { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .critical { background-color: #fee2e2; color: #991b1b; }
+        .high { background-color: #fed7aa; color: #92400e; }
+        .medium { background-color: #dbeafe; color: #1e3a8a; }
+        .low { background-color: #dcfce7; color: #166534; }
+        .footer { margin-top: 40px; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>${deal.name}</h1>
+    
+    <div class="section">
+        <div class="section-title">Deal Overview</div>
+        <div class="field"><span class="field-label">Target Company:</span><span class="field-value">${deal.targetCompany}</span></div>
+        <div class="field"><span class="field-label">Deal Type:</span><span class="field-value">${deal.type}</span></div>
+        <div class="field"><span class="field-label">Sector:</span><span class="field-value">${deal.sector}</span></div>
+        <div class="field"><span class="field-label">Geography:</span><span class="field-value">${deal.geography}</span></div>
+        <div class="field"><span class="field-label">Deal Size:</span><span class="field-value">$${deal.dealSize}M</span></div>
+        <div class="field"><span class="field-label">Valuation Range:</span><span class="field-value">${deal.valuationRange}</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Status</div>
+        <div class="field"><span class="field-label">Current Stage:</span><span class="field-value">${deal.stage}</span></div>
+        <div class="field"><span class="field-label">Priority:</span><span class="field-value"><span class="priority ${deal.priority.toLowerCase()}">${deal.priority}</span></span></div>
+        <div class="field"><span class="field-label">Deal Owner:</span><span class="field-value">${deal.owner}</span></div>
+        <div class="field"><span class="field-label">Next Action:</span><span class="field-value">${deal.nextAction}</span></div>
+    </div>
+
+    ${deal.risks ? `
+    <div class="section">
+        <div class="section-title">Key Risks</div>
+        <p>${deal.risks}</p>
+    </div>
+    ` : ''}
+
+    ${deal.catalysts ? `
+    <div class="section">
+        <div class="section-title">Key Catalysts</div>
+        <p>${deal.catalysts}</p>
+    </div>
+    ` : ''}
+
+    ${deal.notes ? `
+    <div class="section">
+        <div class="section-title">Internal Notes</div>
+        <p>${deal.notes}</p>
+    </div>
+    ` : ''}
+
+    <div class="footer">
+        Generated by FlowDesk on ${new Date().toLocaleString()} | Local Mode - Confidential
+    </div>
+</body>
+</html>
+            `;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${deal.name.replace(/\s+/g, '_')}_summary.html`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Deal exported to PDF');
+        }
+
+        function exportAllDeals() {
+            if (deals.length === 0) {
+                showToast('No deals to export', 'error');
+                return;
+            }
+
+            let csv = 'Deal Name,Target Company,Type,Sector,Geography,Deal Size ($M),Stage,Priority,Owner,Updated\n';
+            csv += deals.map(d => 
+                `"${d.name}","${d.targetCompany}","${d.type}","${d.sector}","${d.geography}",${d.dealSize},"${d.stage}","${d.priority}","${d.owner}","${new Date(d.updated).toLocaleDateString()}"`
+            ).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `flowdesk_deals_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('All deals exported to CSV');
+        }
+
+        // ========================
+        // Demo & Onboarding
+        // ========================
+
+        function loadDemoDeals() {
+            // Demo data removed - users start with clean pipeline
+            deals = [];
+            saveDeals();
+        }
+
+        function startOnboarding() {
+            loadDemoDeals();
+            document.getElementById('onboardingOverlay').classList.remove('active');
+            localStorage.setItem(ONBOARDING_KEY, 'true');
+            applyFilters();
+            renderBoard();
+            showToast('Ready to create your first deal');
+        }
+
+        function skipOnboarding() {
+            document.getElementById('onboardingOverlay').classList.remove('active');
+            localStorage.setItem(ONBOARDING_KEY, 'true');
+            renderBoard();
+        }
+
+        function resetDemo() {
+            if (!confirm('This will reset all deals to demo data. Continue?')) return;
+            loadDemoDeals();
+            applyFilters();
+            renderBoard();
+            showToast('Demo data reloaded');
+        }
+
+        // ========================
+        // UI Functions
+        // ========================
+
+        function switchView(view) {
+            currentView = view;
+
+            // Update active button based on data-view attribute
+            document.querySelectorAll('.sidebar-btn').forEach(btn => {
+                if (btn.getAttribute('data-view') === view) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Toggle visible view containers
+            const board = document.getElementById('boardView');
+            const list = document.getElementById('listView');
+
+            if (view === 'board') {
+                board.style.display = 'flex';
+                list.style.display = 'none';
+                document.getElementById('analyticsView').style.display = 'none';
+                renderBoard();
+            } else if (view === 'list') {
+                board.style.display = 'none';
+                list.style.display = 'block';
+                document.getElementById('analyticsView').style.display = 'none';
+                renderListView();
+            } else if (view === 'analytics') {
+                board.style.display = 'none';
+                list.style.display = 'none';
+                const analytics = document.getElementById('analyticsView');
+                if (analytics) analytics.style.display = 'block';
+                renderAnalytics();
+            }
+        }
+
+        function toggleSettings() {
+            showToast('Settings coming soon');
+        }
+
+        function refreshData() {
+            loadDeals();
+            applyFilters();
+            renderBoard();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            
+            if (type === 'error') {
+                toast.style.borderLeftColor = 'var(--accent-red)';
+            }
+
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // ========================
+        // Initialization
+        // ========================
+
+        function init() {
+            // If CLEAN_DEMO is enabled, remove any stored demo data so users start fresh.
+            if (CLEAN_DEMO) {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(ONBOARDING_KEY);
+                    deals = [];
+                    filteredDeals = [];
+                } catch (e) {
+                    console.warn('Could not clear localStorage:', e);
+                }
+            }
+
+            loadDeals();
+
+            const onboarded = localStorage.getItem(ONBOARDING_KEY);
+            if (!onboarded) {
+                document.getElementById('onboardingOverlay').classList.add('active');
+            }
+
+            applyFilters();
+            renderBoard();
+
+            // Event listeners
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeDealModal();
+                }
+            });
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
