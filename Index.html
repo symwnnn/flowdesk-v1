@@ -809,7 +809,6 @@
                 <button class="sidebar-btn active" data-view="board" onclick="switchView('board')">Pipeline Board</button>
                 <button class="sidebar-btn" data-view="list" onclick="switchView('list')">List View</button>
                 <button class="sidebar-btn" data-view="analytics" onclick="switchView('analytics')">Analytics</button>
-                <button class="sidebar-btn" data-view="closed" onclick="switchView('closed')">Closed Deals</button>
             </div>
 
             <div class="sidebar-section">
@@ -911,11 +910,6 @@
             <!-- List View (hidden by default) -->
             <div id="listView" class="list-view" style="display:none; padding:20px 30px; overflow:auto;">
                 <!-- Table will be rendered here -->
-            </div>
-
-            <!-- Closed Deals View (hidden by default) -->
-            <div id="closedView" class="closed-view" style="display:none; padding:20px 30px; overflow:auto;">
-                <!-- Closed deals table will be rendered here -->
             </div>
 
             <!-- Analytics View (hidden by default) -->
@@ -1472,92 +1466,6 @@
         }
 
         // ========================
-        // Closed Deals Rendering
-        // ========================
-        function getCurrentFilters(ignoreStage = false) {
-            const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase();
-            const priorityFilter = document.getElementById('priorityFilter')?.value || '';
-            const typeFilter = document.getElementById('typeFilter')?.value || '';
-            const stageFilter = document.getElementById('stageFilter')?.value || '';
-            return { searchQuery, priorityFilter, typeFilter, stageFilter: ignoreStage ? '' : stageFilter };
-        }
-
-        function renderClosedView() {
-            const closedEl = document.getElementById('closedView');
-            if (!closedEl) return;
-
-            // We want to display closed deals but keep other filters (search, type, priority)
-            const { searchQuery, priorityFilter, typeFilter } = getCurrentFilters(true);
-            const closedDeals = deals.filter(d => d.stage === 'Closed' && (
-                (!searchQuery || d.name.toLowerCase().includes(searchQuery) || (d.targetCompany || '').toLowerCase().includes(searchQuery) || (d.sector || '').toLowerCase().includes(searchQuery))
-            ) && (!priorityFilter || d.priority === priorityFilter) && (!typeFilter || d.type === typeFilter));
-
-            if (!closedDeals.length) {
-                closedEl.innerHTML = '<div class="empty-state"><div class="empty-state-text">No closed deals</div></div>';
-                return;
-            }
-
-            const rows = closedDeals.map(d => `
-                <tr>
-                    <td>${escapeHtml(d.name)}</td>
-                    <td>${escapeHtml(d.targetCompany)}</td>
-                    <td>${escapeHtml(d.type)}</td>
-                    <td>${escapeHtml(d.sector)}</td>
-                    <td>$${d.dealSize}M</td>
-                    <td>${escapeHtml(d.priority)}</td>
-                    <td>${escapeHtml(d.owner)}</td>
-                    <td>${new Date(d.updated).toLocaleDateString()}</td>
-                    <td>
-                        <button class="deal-action-btn" onclick="openDealModal('${d.id}')">View</button>
-                        <button class="deal-action-btn" onclick="exportDealPDF('${d.id}')">PDF</button>
-                    </td>
-                </tr>
-            `).join('');
-
-            closedEl.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <div style="font-weight:700;font-size:16px">Closed Deals</div>
-                    <div>
-                        <button class="btn btn-secondary" onclick="exportClosedDealsCsv()">Export Closed</button>
-                    </div>
-                </div>
-                <table class="list-table">
-                    <thead>
-                        <tr>
-                            <th>Deal Name</th>
-                            <th>Company</th>
-                            <th>Type</th>
-                            <th>Sector</th>
-                            <th>Size</th>
-                            <th>Priority</th>
-                            <th>Owner</th>
-                            <th>Updated</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            `;
-        }
-
-        function exportClosedDealsCsv() {
-            const closedDeals = deals.filter(d => d.stage === 'Closed');
-            if (!closedDeals.length) { showToast('No closed deals to export', 'error'); return; }
-            let csv = 'Deal Name,Target Company,Type,Sector,Geography,Deal Size ($M),Stage,Priority,Owner,Updated\n';
-            csv += closedDeals.map(d => `"${d.name}","${d.targetCompany}","${d.type}","${d.sector}","${d.geography}",${d.dealSize},"${d.stage}","${d.priority}","${d.owner}","${new Date(d.updated).toLocaleDateString()}"`).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `flowdesk_closed_deals_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
-            showToast('Closed deals exported to CSV');
-        }
-
-        // ========================
         // Analytics Rendering
         // ========================
         function renderAnalytics() {
@@ -1866,13 +1774,6 @@
                 const analytics = document.getElementById('analyticsView');
                 if (analytics) analytics.style.display = 'block';
                 renderAnalytics();
-            } else if (view === 'closed') {
-                board.style.display = 'none';
-                list.style.display = 'none';
-                document.getElementById('analyticsView').style.display = 'none';
-                const closed = document.getElementById('closedView');
-                if (closed) closed.style.display = 'block';
-                renderClosedView();
             }
         }
 
