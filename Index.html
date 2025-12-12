@@ -840,6 +840,9 @@
                         <option value="Closed">Closed</option>
                     </select>
                 </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button id="clearFiltersSidebarBtn" class="sidebar-btn" onclick="clearFilters()">Clear Filters</button>
+                </div>
             </div>
 
             <div class="sidebar-section">
@@ -864,6 +867,7 @@
                 <div class="header-title">Pipeline Overview</div>
                 <div class="header-actions">
                     <button id="refreshBtn" class="btn btn-secondary" onclick="refreshData()" title="Refresh">REFRESH</button>
+                    <button id="clearFiltersBtn" class="btn btn-secondary" onclick="clearFilters()" title="Clear filters">CLEAR</button>
                     <button id="newDealBtn" class="btn btn-primary" onclick="openNewDealModal()">+ NEW DEAL</button>
                 </div>
             </div>
@@ -886,6 +890,10 @@
                     <div class="stat-card">
                         <div class="stat-value" id="closedCount">0</div>
                         <div class="stat-label">Closed Deals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="displayedDeals">0</div>
+                        <div class="stat-label">Displayed</div>
                     </div>
                 </div>
             </div>
@@ -1363,7 +1371,15 @@
                 return matchesSearch && matchesPriority && matchesType && matchesStage;
             });
 
-            renderBoard();
+            // Update top-level stats and re-render current view
+            updateStats();
+            if (currentView === 'board') {
+                renderBoard();
+            } else if (currentView === 'list') {
+                renderListView();
+            } else if (currentView === 'analytics') {
+                renderAnalytics();
+            }
         }
 
         // ========================
@@ -1375,11 +1391,16 @@
             const pipelineValue = deals.reduce((sum, d) => sum + d.dealSize, 0);
             const criticalCount = deals.filter(d => d.priority === 'Critical').length;
             const closedCount = deals.filter(d => d.stage === 'Closed').length;
-
+            // Display totals (global)
             document.getElementById('totalDeals').textContent = totalDeals;
             document.getElementById('pipelineValue').textContent = `$${pipelineValue.toFixed(0)}M`;
             document.getElementById('criticalCount').textContent = criticalCount;
             document.getElementById('closedCount').textContent = closedCount;
+
+            // Display filtered/visible deals count
+            const displayed = (filteredDeals && filteredDeals.length) ? filteredDeals.length : 0;
+            const displayedEl = document.getElementById('displayedDeals');
+            if (displayedEl) displayedEl.textContent = displayed;
         }
 
         // ========================
@@ -1749,6 +1770,21 @@
             loadDeals();
             applyFilters();
             renderBoard();
+        }
+
+        function clearFilters() {
+            const search = document.getElementById('searchInput');
+            const priority = document.getElementById('priorityFilter');
+            const type = document.getElementById('typeFilter');
+            const stage = document.getElementById('stageFilter');
+
+            if (search) search.value = '';
+            if (priority) priority.value = '';
+            if (type) type.value = '';
+            if (stage) stage.value = '';
+
+            applyFilters();
+            showToast('Filters cleared');
         }
 
         function showToast(message, type = 'success') {
