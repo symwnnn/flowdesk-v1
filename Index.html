@@ -787,6 +787,9 @@
         </div>
     </div>
 
+    <!-- Hidden file input for Import CSV -->
+    <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none" onchange="handleImportCsvFile(event)">
+
     <div class="container">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -845,12 +848,7 @@
                 </div>
             </div>
 
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">Actions</div>
-                <button class="sidebar-btn" onclick="exportAllDeals()">Export CSV</button>
-                <button class="sidebar-btn" onclick="resetDemo()">Reset Demo</button>
-                <button class="sidebar-btn" onclick="toggleSettings()">Settings</button>
-            </div>
+            <!-- Actions: moved Export CSV to the header; removed Reset Demo and Settings from sidebar per UI cleanup -->
 
             <div style="flex: 1;"></div>
 
@@ -866,8 +864,8 @@
             <div class="header">
                 <div class="header-title">Pipeline Overview</div>
                 <div class="header-actions">
-                    <button id="refreshBtn" class="btn btn-secondary" onclick="refreshData()" title="Refresh">REFRESH</button>
-                    <button id="clearFiltersBtn" class="btn btn-secondary" onclick="clearFilters()" title="Clear filters">CLEAR</button>
+                    <button id="exportCsvBtn" class="btn btn-secondary" onclick="exportAllDeals()" title="Export CSV">EXPORT CSV</button>
+                    <button id="importCsvBtn" class="btn btn-secondary" onclick="importCsv()" title="Import CSV">IMPORT CSV</button>
                     <button id="newDealBtn" class="btn btn-primary" onclick="openNewDealModal()">+ NEW DEAL</button>
                 </div>
             </div>
@@ -1785,6 +1783,157 @@
 
             applyFilters();
             showToast('Filters cleared');
+        }
+
+        // ========================
+        // Import CSV
+        // ========================
+        function importCsv() {
+            const input = document.getElementById('importCsvInput');
+            if (input) {
+                input.value = null; // reset
+                input.click();
+            }
+        }
+
+        function handleImportCsvFile(event) {
+            const file = event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                    try {
+                    const rows = parseCSV(text);
+                    const imported = importCsvRows(rows);
+                    saveDeals();
+                    applyFilters();
+                    // Re-render current view (applyFilters already renders, but call explicitly)
+                    if (currentView === 'board') renderBoard();
+                    else if (currentView === 'list') renderListView();
+                    else if (currentView === 'analytics') renderAnalytics();
+                    if (imported > 0) showToast(`Imported ${imported} deals`);
+                    else showToast('No new deals imported', 'error');
+                } catch (err) {
+                    console.error('CSV import failed', err);
+                    showToast('Failed to import CSV', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(content) {
+            // Split into lines, ignore empty lines
+            const lines = content.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length === 0) return [];
+            const headers = splitCsvLine(lines[0]).map(h => h.trim());
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = splitCsvLine(lines[i]);
+                if (cols.length === 1 && cols[0] === '') continue;
+                const obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = (cols[j] !== undefined) ? cols[j] : '';
+                }
+                rows.push(obj);
+            }
+            return rows;
+        }
+
+        function splitCsvLine(line) {
+            const arr = [];
+            let cur = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+                    else { inQuotes = !inQuotes; }
+                } else if (ch === ',' && !inQuotes) {
+                    arr.push(cur);
+                    cur = '';
+                } else { cur += ch; }
+            }
+            arr.push(cur);
+            return arr.map(s => s.trim());
+        }
+
+        function importCsvRows(rows) {
+            if (!rows || rows.length === 0) return 0;
+            // Build header mapping (canonical field names) using first row's keys
+            const headerKeys = Object.keys(rows[0]);
+            const headerMap = {};
+            headerKeys.forEach(k => {
+                const nk = k.trim().toLowerCase();
+                // Map common header aliases to canonical field names
+                if (/^(deal[\s_]*name|name)$/.test(nk)) headerMap[k] = 'name';
+                else if (/^(target[\s_]*company|company|target)$/.test(nk)) headerMap[k] = 'targetCompany';
+                else if (/^(type|deal[\s_]*type)$/.test(nk)) headerMap[k] = 'type';
+                else if (/^(sector)$/.test(nk)) headerMap[k] = 'sector';
+                else if (/^(geography|region|location)$/.test(nk)) headerMap[k] = 'geography';
+                else if (/^(deal[\s_]*size|size|amount)$/.test(nk)) headerMap[k] = 'dealSize';
+                else if (/^(valuation|valuation[\s_]*range)$/.test(nk)) headerMap[k] = 'valuationRange';
+                else if (/^(stage|current[\s_]*stage)$/.test(nk)) headerMap[k] = 'stage';
+                else if (/^(priority)$/.test(nk)) headerMap[k] = 'priority';
+                else if (/^(owner|deal[\s_]*owner)$/.test(nk)) headerMap[k] = 'owner';
+                else if (/^(notes|internal[\s_]*notes)$/.test(nk)) headerMap[k] = 'notes';
+                else if (/^(risks)$/.test(nk)) headerMap[k] = 'risks';
+                else if (/^(catalysts)$/.test(nk)) headerMap[k] = 'catalysts';
+                else if (/^(next[\s_]*action)$/.test(nk)) headerMap[k] = 'nextAction';
+                else headerMap[k] = k; // preserve unknowns (not used)
+            });
+
+            let count = 0;
+            rows.forEach(row => {
+                const data = {};
+                Object.keys(row).forEach(h => {
+                    const field = headerMap[h];
+                    if (!field) return;
+                    data[field] = row[h];
+                });
+
+                // Ensure required fields
+                const name = (data.name || '').trim();
+                if (!name) return; // skip rows without a name
+                // Avoid duplicates by name + company (case-insensitive)
+                const targetCompany = (data.targetCompany || '').trim();
+                const duplicate = deals.find(d => d.name.toLowerCase() === name.toLowerCase() && (d.targetCompany || '').toLowerCase() === targetCompany.toLowerCase());
+                if (duplicate) {
+                    // Update existing fields optionally
+                    duplicate.type = data.type || duplicate.type;
+                    duplicate.sector = data.sector || duplicate.sector;
+                    duplicate.geography = data.geography || duplicate.geography;
+                    duplicate.dealSize = parseFloat(data.dealSize) || duplicate.dealSize;
+                    duplicate.stage = data.stage || duplicate.stage;
+                    duplicate.priority = data.priority || duplicate.priority;
+                    duplicate.owner = data.owner || duplicate.owner;
+                    duplicate.notes = data.notes || duplicate.notes;
+                    duplicate.risks = data.risks || duplicate.risks;
+                    duplicate.catalysts = data.catalysts || duplicate.catalysts;
+                    duplicate.nextAction = data.nextAction || duplicate.nextAction;
+                    duplicate.updated = new Date().toISOString();
+                } else {
+                    // Create a new deal
+                    const newDeal = createDeal({
+                        name: name,
+                        targetCompany: targetCompany,
+                        type: data.type || 'M&A',
+                        sector: data.sector || 'Technology',
+                        geography: data.geography || 'North America',
+                        dealSize: parseFloat(data.dealSize) || 0,
+                        valuationRange: data.valuationRange || '',
+                        stage: data.stage || 'Lead',
+                        priority: data.priority || 'Medium',
+                        owner: data.owner || 'Unassigned',
+                        notes: data.notes || '',
+                        risks: data.risks || '',
+                        catalysts: data.catalysts || '',
+                        nextAction: data.nextAction || ''
+                    });
+                    deals.push(newDeal);
+                    count++;
+                }
+            });
+            return count;
         }
 
         function showToast(message, type = 'success') {
